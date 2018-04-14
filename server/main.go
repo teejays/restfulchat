@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"github.com/teejays/gofiledb"
@@ -29,7 +30,7 @@ func main() {
 
 	// Initialize the server
 	router := httprouter.New()
-	router.GET("/v1/chat/:user", getChat)
+	router.GET("/v1/chat/:userid", getChat)
 	router.POST("/v1/chat", postChat)
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
@@ -39,11 +40,27 @@ func main() {
 **************************************************************************/
 type responseStruct struct {
 	IsError bool
-	Message string
+	Message interface{}
 }
 
+// GET: Get all the conversations of the user
 func getChat(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	fmt.Fprintf(w, "Requesting chat logs for %s\n", p.ByName("userid"))
+	var userId string = p.ByName("userid")
+	if userId == "" {
+		log.Fatal("Invalid userid provided")
+	}
+	partners := getConversationPartnersForUser(userId)
+	var data []*Conversation = make([]*Conversation, len(partners))
+	for _, partner := range partners {
+		data = append(data, GetConversation([]string{userId, partner}))
+	}
+
+	resp := responseStruct{Message: data}
+	b, err := json.Marshal(resp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.Write(b)
 }
 
 func postChat(w http.ResponseWriter, r *http.Request, p httprouter.Params) {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 	"time"
 )
 
@@ -9,34 +10,34 @@ import (
 type Message struct {
 	Content   string
 	Timestamp time.Time
-	From      User
+	From      string
 }
 
-// A conversation is made of ordered messages between a members
+// A conversation is made of ordered messages between two Users
 type Conversation struct {
-	Members  []User // always sorted by user id
+	UserIds  []string
 	Messages []Message
 }
 
-func GetConversation(members []User) *Conversation {
-	key := getUniqueKeyForMembers(members)
+func GetConversation(userIds []string) *Conversation {
+	key := getUniqueKeyForMembers(userIds)
 	var c Conversation
-	_, err := db.GetStructIfExists(key, &c, "conversations")
+	_, err := db.GetStructIfExists(key, &c, "/restfulchat/conversations")
 	if err != nil {
 		log.Fatal(err)
 	}
 	return &c
 }
 
-func getUniqueKeyForMembers(members []User) string {
+func getUniqueKeyForMembers(userIds []string) string {
 	var key string
 	key += "conversation_"
-	key += stringsJoin(members, "_")
+	key += strings.Join(userIds, "_")
 	return key
 }
 
 func (c *Conversation) UniqueKey() string {
-	return getUniqueKeyForMembers(c.Members)
+	return getUniqueKeyForMembers(c.UserIds)
 }
 
 func (c *Conversation) AddMessage(m Message) error {
