@@ -1,37 +1,63 @@
 package main
 
 import (
+	"fmt"
 	"github.com/teejays/gofiledb"
 	"log"
 )
 
-var userConversationMap map[string][]string
+var usersPartnersMap map[string]map[string]bool
 
 type User struct {
 	UserId string
 }
 
-func init() {
-	loadUserConversationMap()
+func initUsersPartnersMap() {
+	fmt.Println("Initializing Users Model")
+	loadUsersPartnersMap()
 }
 
-func loadUserConversationMap() {
+func loadUsersPartnersMap() {
 	db := gofiledb.GetClient()
-	exists, err := db.GetStructIfExists("user_conversation_map", &userConversationMap, "/restfulchat")
+	exists, err := db.GetStructIfExists("users_partners_map", &usersPartnersMap, "/users/")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[UsersPartners Load] %v", err)
 	}
 	if !exists {
-		userConversationMap = make(map[string][]string)
+		fmt.Println("Initializing UsersPartners Empty map")
+		usersPartnersMap = make(map[string]map[string]bool)
 	}
 }
 
-func getConversationPartnersForUser(userId string) []string {
-	convs, exists := userConversationMap[userId]
+func getPartnersForUser(userId string) []string {
+	partnersMap, exists := usersPartnersMap[userId]
 	if !exists {
 		return []string{}
 	}
-	return convs
+	var partners []string
+	for p, v := range partnersMap {
+		if v {
+			partners = append(partners, p)
+		}
+	}
+	return partners
+}
+
+func addPartnerForUser(userId, partnerId string) {
+	if _, exists := usersPartnersMap[userId]; !exists {
+		usersPartnersMap[userId] = make(map[string]bool)
+	}
+	usersPartnersMap[userId][partnerId] = true
+
+	if _, exists := usersPartnersMap[partnerId]; !exists {
+		usersPartnersMap[partnerId] = make(map[string]bool)
+	}
+	usersPartnersMap[partnerId][userId] = true
+
+	err := db.SetStruct("users_partners_map", &usersPartnersMap, "/users/")
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Takes an array of Users and joins them

@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"github.com/teejays/gofiledb"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
+	"time"
 )
 
 // This is RESTful' Service for Chat. It should have a few endpoints:
@@ -25,13 +28,14 @@ var db *gofiledb.Client
 
 func main() {
 	// Initialize the DB
-	gofiledb.InitClient("/home/talhajansari/data")
+	gofiledb.InitClient("/home/talhajansari/data/restfulchat")
 	db = gofiledb.GetClient()
+	initUsersPartnersMap()
 
 	// Initialize the server
 	router := httprouter.New()
 	router.GET("/v1/chat/:userid", getChat)
-	router.POST("/v1/chat", postChat)
+	router.POST("/v1/chat/:userid", postChat)
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
@@ -45,14 +49,14 @@ type responseStruct struct {
 
 // GET: Get all the conversations of the user
 func getChat(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	var userId string = p.ByName("userid")
+	var userId string = strings.ToLower(p.ByName("userid"))
 	if userId == "" {
 		log.Fatal("Invalid userid provided")
 	}
-	partners := getConversationPartnersForUser(userId)
+	partners := getPartnersForUser(userId)
 	var data []*Conversation = make([]*Conversation, len(partners))
-	for _, partner := range partners {
-		data = append(data, GetConversation([]string{userId, partner}))
+	for i, partner := range partners {
+		data[i] = GetConversation([]string{userId, partner})
 	}
 
 	resp := responseStruct{Message: data}
@@ -63,8 +67,54 @@ func getChat(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	w.Write(b)
 }
 
+type PostChatParams struct {
+	Content string
+	To      string
+}
+
 func postChat(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	return
+	var userId string = strings.ToLower(p.ByName("userid"))
+	if userId == "" {
+		log.Fatal("Invalid userid provided")
+	}
+
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer r.Body.Close()
+
+	var body PostChatParams
+	err = json.Unmarshal(b, &body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if body.Content == "" {
+		log.Fatal("Empty message")
+	}
+	body.To = strings.ToLower(body.To)
+	if body.To == "" {
+		log.Fatal("Invalid recipient")
+	}
+	if body.To == userId {
+		log.Fatal("Cannot send a message to yourself")
+	}
+	conv := GetConversation([]string{userId, body.To})
+
+	conv.AddMessage(Message{Content: body.Content, From: userId, Timestamp: time.Now()})
+	err = conv.Save()
+	if err != nil {
+		log.Fatalf("[Save Conversation] %v", err)
+	}
+
+	addPartnerForUser(userId, body.To)
+
+	resp := responseStruct{Message: "Message sent."}
+	b, err = json.Marshal(resp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.Write(b)
 }
 
 /**************************************************************************

@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"sort"
 	"strings"
 	"time"
 )
@@ -22,14 +23,27 @@ type Conversation struct {
 func GetConversation(userIds []string) *Conversation {
 	key := getUniqueKeyForMembers(userIds)
 	var c Conversation
-	_, err := db.GetStructIfExists(key, &c, "/restfulchat/conversations")
+	exists, err := db.GetStructIfExists(key, &c, "/conversations/")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[GetConversation] %v", err)
+	}
+	if !exists {
+		c.UserIds = userIds
 	}
 	return &c
 }
 
+func (c *Conversation) AddMessage(m Message) error {
+	c.Messages = append(c.Messages, m)
+	return nil
+}
+
+func (c *Conversation) Save() error {
+	return db.SetStruct(c.UniqueKey(), c, "/conversations/")
+}
+
 func getUniqueKeyForMembers(userIds []string) string {
+	sort.Sort(sort.StringSlice(userIds))
 	var key string
 	key += "conversation_"
 	key += strings.Join(userIds, "_")
@@ -38,9 +52,4 @@ func getUniqueKeyForMembers(userIds []string) string {
 
 func (c *Conversation) UniqueKey() string {
 	return getUniqueKeyForMembers(c.UserIds)
-}
-
-func (c *Conversation) AddMessage(m Message) error {
-	c.Messages = append(c.Messages, m)
-	return nil
 }
