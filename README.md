@@ -1,3 +1,3 @@
-# SocketChat
+# RestfulChat
 
-A side project: A full stack chat client based on websocket.io, Go's net/http package, and my GoFileDb package.
+A side project: A chat API based on Go's net/http package, httprouter, and my GoFileDb package.
