@@ -1,4 +1,4 @@
 {
 	"HttpServerPort": 8080,
-	"GoFiledbRoot": "/Users/talhajansari/data/restfulchat"
+	"GoFiledbRoot": "<your_home_dir>/data/restfulchat"
 }
