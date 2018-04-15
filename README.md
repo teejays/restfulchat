@@ -1,3 +1,56 @@
 # RestfulChat
 
-A side project: A chat API based on Go's net/http package, httprouter, and my GoFileDb package.
+A RESTful chat API based on Go's net/http package, httprouter, and my GoFileDb package.
+
+## Getting Started
+Setting this API up should be fairly easy to set up if you have Go set up. 
+#### Prerequisites:
+1) Install GoLang from the official [Go website](https://golang.org/).
+2) Install the following Go packages:
+	* [httprouter](https://github.com/julienschmidt/httprouter): ``` go get github.com/julienschmidt/httprouter```
+	* [gofiledb](https://github.com/teejays/gofiledb): ``` go get github.com/teejays/gofiledb```
+    
+    
+
+#### Installation:
+1) Clone this repository: 
+
+	```git clone https://github.com/teejays/restfulchat.git```
+    
+2) In the project folder, edit the ```GoFiledbRoot``` variable in _settings.json_ file to a folder path that you have read & write access to (this is where all the data will be stored).
+3) Compile the application: 
+
+	```go build -o server.out``` or ```go install``` or however you feel comfortable.
+4) Assuming that the compiled executable is named _server.out_, start the server:
+	
+    ```./server.out```  
+
+---
+## Documentation
+#### Data Structures:
+The applications is based on three objects:
+1) _User_: Represents a user.
+    * Structure:
+    	* _UserId_ (string)
+    * _Buddy_: a user that another user is interacts with.
+
+
+2) _Conversation_: A conversation is stored communication between two or more users.
+	* Structure: 
+		* _UserIds_: an array of user ids of all the users that are a part of a conversation
+		* _Messages_: An array of _Message_
+
+
+3) _Message_: The most basic data unit that makes a conversation.
+	* Structure:
+		* _Id_ (int): unique identifier of a message within a conversation
+		* Content (string): the content of a message
+		* Timestamp (time): when the message was sent
+		* From (string): how contributed the message in a conversation
+
+
+#### Database / Storage:
+I am using my own [_GoFiledb_](https://github.com/teejays/gofiledb) package for as a database. GoFiledb is a simple, minimalistic Go client that lets applications use the filesystem as a database. The main advantage of GoFiledb is that it uses the years of optimization efforts that went into file systems to make reading and serving of data is very fast. It is very quick to set up (vs. a proper database, which are sometimes an overkill for a simple project). 
+
+#### Contact:
+For any issues or feedback, please create an issue in Github for this repo.
