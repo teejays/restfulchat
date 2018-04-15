@@ -9,13 +9,10 @@ import (
 )
 
 // This is RESTful' Service for Chat. It should have a few endpoints:
-// GET /chat/
-// POST /chat
-// PUT /chat
-// DELETE /chat
-// 1: lets a client register a username
-// 2: lets a user send a message to another username
-// 3: pushes messages to the desired user when another user sends a message
+// GET /chat/ [DONE]
+// POST /chat [DONE]
+// PUT /chat [To do]
+// DELETE /chat [To do]
 
 /**************************************************************************
 * I N I T
@@ -23,18 +20,21 @@ import (
 var db *gofiledb.Client
 
 func main() {
-	// Initialize the DB
+	// I. Initialize the things we need in order to run the application
+	// a) Initialize the database client
 	gofiledb.InitClient(GetConfig().GoFiledbRoot)
 	db = gofiledb.GetClient()
+	// b) Initialize an in-memory map of what users have talked to what other users
 	err := initBuddiesMap()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Initialize the server
+	// II. Initialize the server
 	router := httprouter.New()
 	router.GET("/v1/chat/:userid", getChatHandler)
 	router.POST("/v1/chat/:userid", postChatHandler)
+	fmt.Printf("HTTP Server listening on port %d\n", GetConfig().HttpServerPort)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", GetConfig().HttpServerPort), router))
 }
 
@@ -44,6 +44,7 @@ func main() {
 
 // GET: Get all the conversations of the user
 func getChatHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	fmt.Println("GET request to /v1/chat")
 
 	// 1. Authenticate (dummy) the requester
 	user, err := authenticateRequest(r, p)
@@ -70,6 +71,7 @@ type PostChatParams struct {
 
 // POST: Send a message to a user
 func postChatHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	fmt.Println("POST request to /v1/chat")
 
 	// 1. Authenticate (dummy)
 	user, err := authenticateRequest(r, p)
@@ -97,9 +99,3 @@ func postChatHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params
 	writeData(w, fmt.Sprintf("Message Id: %d", messageId))
 
 }
-
-/**************************************************************************
-* M O D E L S
-**************************************************************************/
-// Need to think of a DB design. A major part of this project is logging conversations.
-// It makes sense to organize it by conversations
