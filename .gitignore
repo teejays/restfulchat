@@ -1,3 +1,6 @@
 .DS_Store
 */.DS_Store
 server.out
+.gitignore
+settings.json
+settings_testing.json
