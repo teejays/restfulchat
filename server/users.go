@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/teejays/gofiledb"
 	"strings"
+	"time"
 )
 
 /**************************************************************************
@@ -23,11 +23,17 @@ func GetUser(userId string) (*User, error) {
 	return &u, nil
 }
 
-func validateUserId(userId string) error {
-	if strings.Trim(userId, " ") == "" {
-		return fmt.Errorf("User Id validation failed: empty user id")
+func (u *User) GetConversations() ([]*Conversation, error) {
+	buddies := u.GetBuddies()
+	var data []*Conversation = make([]*Conversation, len(buddies))
+	var err error
+	for i, buddy := range buddies {
+		data[i], err = u.GetConversation(buddy.UserId)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return nil
+	return data, nil
 }
 
 func (u *User) GetBuddies() []User {
@@ -83,6 +89,35 @@ func (u *User) RegisterBuddy(buddyUserId string) error {
 	return nil
 }
 
+func (u *User) SendMessage(recipientUserId, content string) (int, error) {
+	timestamp := time.Now()
+
+	recipientUserId = processUserId(recipientUserId)
+	err := validateUserId(recipientUserId)
+	if err != nil {
+		return -1, err
+	}
+
+	conv, err := u.GetConversation(recipientUserId)
+	if err != nil {
+		return -1, err
+	}
+
+	messageId, err := conv.AddMessage(Message{Content: content, From: u.UserId, Timestamp: timestamp})
+	if err != nil {
+		fmt.Println("[Add Message Error]")
+		return messageId, err
+	}
+
+	err = u.RegisterBuddy(recipientUserId)
+	if err != nil {
+		return -1, err
+	}
+
+	return messageId, nil
+
+}
+
 /**************************************************************************
 * B U D D I E S
 **************************************************************************/
@@ -90,14 +125,28 @@ var buddiesMap map[string]map[string]bool
 var buddiesCollectionName string = "buddies"
 
 func initBuddiesMap() error {
-	db := gofiledb.GetClient()
 	exists, err := db.GetStructIfExists(buddiesCollectionName, "buddies_map", &buddiesMap)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		fmt.Println("Initializing UsersPartners Empty map")
 		buddiesMap = make(map[string]map[string]bool)
 	}
 	return nil
+}
+
+// Ensure that the user id is valid
+// To do: Ensure that there no special characters
+func validateUserId(userId string) error {
+	if strings.Trim(userId, " ") == "" {
+		return fmt.Errorf("User Id validation failed: empty user id")
+	}
+	return nil
+}
+
+// Standardize the user id before processing
+func processUserId(userId string) string {
+	userId = strings.ToLower(userId)
+	userId = strings.Trim(userId, " ")
+	return userId
 }
