@@ -3,71 +3,101 @@ package main
 import (
 	"fmt"
 	"github.com/teejays/gofiledb"
-	"log"
+	"strings"
 )
 
-var usersPartnersMap map[string]map[string]bool
-
+/**************************************************************************
+* U S E R
+**************************************************************************/
 type User struct {
 	UserId string
 }
 
-func initUsersPartnersMap() {
-	fmt.Println("Initializing Users Model")
-	loadUsersPartnersMap()
+func GetUser(userId string) (*User, error) {
+	userId = strings.ToLower(userId)
+	err := validateUserId(userId)
+	if err != nil {
+		return nil, err
+	}
+	var u User = User{UserId: userId}
+	return &u, nil
 }
 
-func loadUsersPartnersMap() {
-	db := gofiledb.GetClient()
-	exists, err := db.GetStructIfExists("users_partners_map", &usersPartnersMap, "/users/")
+func validateUserId(userId string) error {
+	if strings.Trim(userId, " ") == "" {
+		return fmt.Errorf("User Id validation failed: empty user id")
+	}
+	return nil
+}
+
+func (u *User) GetBuddies() []User {
+	_buddies, exists := buddiesMap[u.UserId]
+	if !exists {
+		return []User{}
+	}
+	var buddies []User
+	for uid, v := range _buddies {
+		if v {
+			buddies = append(buddies, User{UserId: uid})
+		}
+	}
+	return buddies
+}
+
+func (u *User) GetConversation(buddyUserId string) (*Conversation, error) {
+	err := validateUserId(buddyUserId)
 	if err != nil {
-		log.Fatalf("[UsersPartners Load] %v", err)
+		return nil, err
+	}
+	if u.UserId == buddyUserId {
+		return nil, fmt.Errorf("Cannot have a conversation with yourself")
+	}
+	var userIds []string = []string{u.UserId, buddyUserId}
+	key := uniqueConversationKey(userIds)
+	var c Conversation
+	exists, err := db.GetStructIfExists(conversationCollectionName, key, &c)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		c.UserIds = userIds
+	}
+	return &c, nil
+}
+
+func (u *User) RegisterBuddy(buddyUserId string) error {
+	if _, exists := buddiesMap[u.UserId]; !exists {
+		buddiesMap[u.UserId] = make(map[string]bool)
+	}
+	buddiesMap[u.UserId][buddyUserId] = true
+
+	if _, exists := buddiesMap[buddyUserId]; !exists {
+		buddiesMap[buddyUserId] = make(map[string]bool)
+	}
+	buddiesMap[buddyUserId][u.UserId] = true
+
+	err := db.SetStruct(buddiesCollectionName, "buddies_map", &buddiesMap)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+/**************************************************************************
+* B U D D I E S
+**************************************************************************/
+var buddiesMap map[string]map[string]bool
+var buddiesCollectionName string = "buddies"
+
+func initBuddiesMap() error {
+	db := gofiledb.GetClient()
+	exists, err := db.GetStructIfExists(buddiesCollectionName, "buddies_map", &buddiesMap)
+	if err != nil {
+		return err
 	}
 	if !exists {
 		fmt.Println("Initializing UsersPartners Empty map")
-		usersPartnersMap = make(map[string]map[string]bool)
+		buddiesMap = make(map[string]map[string]bool)
 	}
-}
-
-func getPartnersForUser(userId string) []string {
-	partnersMap, exists := usersPartnersMap[userId]
-	if !exists {
-		return []string{}
-	}
-	var partners []string
-	for p, v := range partnersMap {
-		if v {
-			partners = append(partners, p)
-		}
-	}
-	return partners
-}
-
-func addPartnerForUser(userId, partnerId string) {
-	if _, exists := usersPartnersMap[userId]; !exists {
-		usersPartnersMap[userId] = make(map[string]bool)
-	}
-	usersPartnersMap[userId][partnerId] = true
-
-	if _, exists := usersPartnersMap[partnerId]; !exists {
-		usersPartnersMap[partnerId] = make(map[string]bool)
-	}
-	usersPartnersMap[partnerId][userId] = true
-
-	err := db.SetStruct("users_partners_map", &usersPartnersMap, "/users/")
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-// Takes an array of Users and joins them
-func stringsJoin(users []User, sep string) string {
-	var str string
-	for i, u := range users {
-		str += u.UserId
-		if i < len(users)-1 {
-			str += sep
-		}
-	}
-	return str
+	return nil
 }

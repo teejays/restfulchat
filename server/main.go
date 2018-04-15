@@ -30,7 +30,10 @@ func main() {
 	// Initialize the DB
 	gofiledb.InitClient("/home/talhajansari/data/restfulchat")
 	db = gofiledb.GetClient()
-	initUsersPartnersMap()
+	err := initBuddiesMap()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Initialize the server
 	router := httprouter.New()
@@ -44,77 +47,114 @@ func main() {
 **************************************************************************/
 type responseStruct struct {
 	IsError bool
-	Message interface{}
+	Data    interface{}
 }
 
 // GET: Get all the conversations of the user
 func getChat(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	var userId string = strings.ToLower(p.ByName("userid"))
-	if userId == "" {
-		log.Fatal("Invalid userid provided")
-	}
-	partners := getPartnersForUser(userId)
-	var data []*Conversation = make([]*Conversation, len(partners))
-	for i, partner := range partners {
-		data[i] = GetConversation([]string{userId, partner})
+	user, err := authenticateRequest(r, p)
+	if err != nil {
+		writeError(w, err)
+		return
 	}
 
-	resp := responseStruct{Message: data}
-	b, err := json.Marshal(resp)
-	if err != nil {
-		log.Fatal(err)
+	buddies := user.GetBuddies()
+	var data []*Conversation = make([]*Conversation, len(buddies))
+	for i, buddy := range buddies {
+		data[i], err = user.GetConversation(buddy.UserId)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
 	}
-	w.Write(b)
+
+	writeData(w, data)
 }
 
 type PostChatParams struct {
-	Content string
+	Message string
 	To      string
 }
 
 func postChat(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	var userId string = strings.ToLower(p.ByName("userid"))
-	if userId == "" {
-		log.Fatal("Invalid userid provided")
+	user, err := authenticateRequest(r, p)
+	if err != nil {
+		writeError(w, err)
+		return
 	}
 
+	// Get the posted message and process
+	var body PostChatParams
+	err = parseBody(r, &body)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	recipient := strings.ToLower(body.To)
+	err = validateUserId(recipient)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	conv, err := user.GetConversation(recipient)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	messageId, err := conv.AddMessage(Message{Content: body.Message, From: user.UserId, Timestamp: time.Now()})
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	err = user.RegisterBuddy(recipient)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	writeData(w, fmt.Sprintf("Message sent. Message Id: %d", messageId))
+
+}
+
+// This is not being implemented yet, so we're just passing user ids as a route param
+func authenticateRequest(r *http.Request, p httprouter.Params) (*User, error) {
+	uid := strings.ToLower(p.ByName("userid"))
+	if uid == "" {
+		return nil, fmt.Errorf("Invalid userid provided")
+	}
+	return GetUser(uid)
+}
+
+func writeError(w http.ResponseWriter, err error) {
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte(fmt.Sprintf("%s", err.Error())))
+}
+
+func writeData(w http.ResponseWriter, data interface{}) {
+	resp := responseStruct{Data: data}
+	b, err := json.Marshal(resp)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(b)
+}
+
+func parseBody(r *http.Request, v interface{}) error {
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer r.Body.Close()
-
-	var body PostChatParams
-	err = json.Unmarshal(b, &body)
+	err = json.Unmarshal(b, &v)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	if body.Content == "" {
-		log.Fatal("Empty message")
-	}
-	body.To = strings.ToLower(body.To)
-	if body.To == "" {
-		log.Fatal("Invalid recipient")
-	}
-	if body.To == userId {
-		log.Fatal("Cannot send a message to yourself")
-	}
-	conv := GetConversation([]string{userId, body.To})
-
-	conv.AddMessage(Message{Content: body.Content, From: userId, Timestamp: time.Now()})
-	err = conv.Save()
-	if err != nil {
-		log.Fatalf("[Save Conversation] %v", err)
-	}
-
-	addPartnerForUser(userId, body.To)
-
-	resp := responseStruct{Message: "Message sent."}
-	b, err = json.Marshal(resp)
-	if err != nil {
-		log.Fatal(err)
-	}
-	w.Write(b)
+	return nil
 }
 
 /**************************************************************************
@@ -122,21 +162,3 @@ func postChat(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 **************************************************************************/
 // Need to think of a DB design. A major part of this project is logging conversations.
 // It makes sense to organize it by conversations
-
-/**************************************************************************
-* F A C T O R Y
-**************************************************************************/
-var userConnMap map[string]interface{}
-
-func startUserSession(username string, connection interface{}) error {
-	if _, exists := userConnMap[username]; exists {
-		return fmt.Errorf("The username '%s' is in use", username)
-	}
-	userConnMap[username] = connection
-	return nil
-}
-
-func endUserSession(username string) error {
-	delete(userConnMap, username)
-	return nil
-}

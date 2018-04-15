@@ -1,14 +1,17 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
 )
 
+var conversationCollectionName string = "conversation"
+
 // Message is the primary data object
 type Message struct {
+	Id        int
 	Content   string
 	Timestamp time.Time
 	From      string
@@ -20,36 +23,39 @@ type Conversation struct {
 	Messages []Message
 }
 
-func GetConversation(userIds []string) *Conversation {
-	key := getUniqueKeyForMembers(userIds)
-	var c Conversation
-	exists, err := db.GetStructIfExists(key, &c, "/conversations/")
+func (c *Conversation) AddMessage(m Message) (int, error) {
+	err := m.Validate()
 	if err != nil {
-		log.Fatalf("[GetConversation] %v", err)
+		return -1, err
 	}
-	if !exists {
-		c.UserIds = userIds
-	}
-	return &c
-}
-
-func (c *Conversation) AddMessage(m Message) error {
+	m.Id = len(c.Messages) + 1
 	c.Messages = append(c.Messages, m)
-	return nil
+	err = c.Save()
+	if err != nil {
+		return -1, err
+	}
+	return m.Id, nil
 }
 
 func (c *Conversation) Save() error {
-	return db.SetStruct(c.UniqueKey(), c, "/conversations/")
+	return db.SetStruct(conversationCollectionName, c.UniqueKey(), c)
 }
 
-func getUniqueKeyForMembers(userIds []string) string {
+func (m *Message) Validate() error {
+	if strings.Trim(m.Content, " ") == "" {
+		return fmt.Errorf("Message validation failed: empty message")
+	}
+	return nil
+}
+
+func (c *Conversation) UniqueKey() string {
+	return uniqueConversationKey(c.UserIds)
+}
+
+func uniqueConversationKey(userIds []string) string {
 	sort.Sort(sort.StringSlice(userIds))
 	var key string
 	key += "conversation_"
 	key += strings.Join(userIds, "_")
 	return key
-}
-
-func (c *Conversation) UniqueKey() string {
-	return getUniqueKeyForMembers(c.UserIds)
 }
