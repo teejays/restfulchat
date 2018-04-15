@@ -4,7 +4,7 @@ A RESTful chat API based on Go's net/http package, httprouter, and my GoFileDb p
 
 ## Getting Started
 Setting this API up should be fairly easy to set up if you have Go set up. 
-#### Prerequisites:
+### Prerequisites:
 1) Install GoLang from the official [Go website](https://golang.org/).
 2) Install the following Go packages:
 	* [httprouter](https://github.com/julienschmidt/httprouter): ``` go get github.com/julienschmidt/httprouter```
@@ -12,12 +12,13 @@ Setting this API up should be fairly easy to set up if you have Go set up.
     
     
 
-#### Installation:
+### Installation:
 1) Clone this repository: 
 
 	```git clone https://github.com/teejays/restfulchat.git```
     
 2) In the project folder, edit the ```GoFiledbRoot``` variable in _settings.json_ file to a folder path that you have read & write access to (this is where all the data will be stored).
+
 3) Compile the application: 
 
 	```go build -o server.out``` or ```go install``` or however you feel comfortable.
@@ -25,9 +26,17 @@ Setting this API up should be fairly easy to set up if you have Go set up.
 	
     ```./server.out```  
 
+### Usage:
+
+We have the following API endpoints implemented:
+* **GET /v1/chat/:userid**
+	* CURL e.g. ```curl localhost:8080/v1/chat/someuser1```
+* **POST /v1/chat/:userid**
+	* ```curl localhost:8080/v1/chat/someuser1 -X POST -H "Content-Type: application/json" -d '{"Message":"Hello World!", "To":"someuser2"}'```
+
 ---
 ## Documentation
-#### Data Structures:
+### Data Structures:
 The applications is based on three objects:
 1) _User_: Represents a user.
     * Structure:
@@ -49,8 +58,8 @@ The applications is based on three objects:
 		* From (string): how contributed the message in a conversation
 
 
-#### Database / Storage:
+### Database / Storage:
 I am using my own [_GoFiledb_](https://github.com/teejays/gofiledb) package for as a database. GoFiledb is a simple, minimalistic Go client that lets applications use the filesystem as a database. The main advantage of GoFiledb is that it uses the years of optimization efforts that went into file systems to make reading and serving of data is very fast. It is very quick to set up (vs. a proper database, which are sometimes an overkill for a simple project). 
 
-#### Contact:
+### Contact:
 For any issues or feedback, please create an issue in Github for this repo.
