@@ -26,15 +26,6 @@ Setting this API up should be fairly easy to set up if you have Go set up.
 	
     ```./server.out```  
 
-### Usage:
-
-We have the following API endpoints implemented:
-* **GET /v1/chat/:userid**
-	* CURL e.g. ```curl localhost:8080/v1/chat/someuser1```
-* **POST /v1/chat/:userid**
-	* ```curl localhost:8080/v1/chat/someuser1 -X POST -H "Content-Type: application/json" -d '{"Message":"Hello World!", "To":"someuser2"}'```
-
-
 ### Testing:
 
 The unit tests for this package are located in _./tests_ folder. To run the tests, use the following command from the project root directory:
@@ -42,8 +33,30 @@ The unit tests for this package are located in _./tests_ folder. To run the test
 ```go tests -v ./tests```
 
 ---
+
 ## Documentation
-### Data Structures:
+### API Endpoints:
+
+We have the following API endpoints
+* **GET /v1/chat/:userid:** Fetches the chat log of the _userid_	 	
+	* CURL e.g. ```curl localhost:8080/v1/chat/someuser1```
+
+
+* **POST /v1/chat/:userid:** Sends a message from _userid_. The message content and recipient is provided in the request body. 
+	* CURL e.g. ```curl localhost:8080/v1/chat/someuser1 -X POST -H "Content-Type: application/json" -d '{"Content":"Hello World!", "To":"someuser2"}'```
+
+
+* **PUT /v1/chat/:userid:** Edits a message previously sent from _userid_ to a given recipient. The id of the message to edit, the recipient, and the new message content are provided in the request body. 
+	* CURL e.g. ```curl localhost:8080/v1/chat/someuser1 -X PUT -H "Content-Type: application/json" -d '{"MessageId": 1, Content":"Hello World! (edited)", "To":"someuser2"}'```
+
+* **DELETE /v1/chat/:userid:** Deletes a message previously sent from _userid_ to a given recipient. The id of the message to delete and the recipientare provided in the request body. 
+	* CURL e.g. ```curl localhost:8080/v1/chat/someuser1 -X DELETE -H "Content-Type: application/json" -d '{"MessageId": 1, "To":"someuser2"}'```
+
+
+
+---
+## Notes
+### Data Structures
 The applications is based on three objects:
 1) _User_: Represents a user.
     * Structure:
@@ -66,14 +79,14 @@ The applications is based on three objects:
 		* TimestampUpdated (time): when the message was last updated
 		* From (string): contributed the message in a conversation
 
-### Authentication:
+### Authentication
 The authentication layer for this server hasn't been implemented yet. However, the API is built in a way that that Basic Auth could be incorporated easily without changing the structure of the code.
 
-### Database:
+### Database
 I am using my own [_GoFiledb_](https://github.com/teejays/gofiledb) package for as a database. GoFiledb is a simple, minimalistic Go client that lets applications use the filesystem as a database. The main advantage of GoFiledb is that it uses the years of optimization efforts that went into file systems to make reading and serving of data is very fast. It is very quick to set up (vs. a proper database, which are sometimes an overkill for a simple project). 
 
 _Scalability:_
 This is a minimalistic API, developed mostly for fun and experimentation reasons. In order to scale it further, a few decisions probably need to be changed. For example, the local file syetem based data storage should probably be replaced by a proper schemaless DB system.
 
-### Contact:
+### Contact Info
 For any issues or feedback, please create an issue in Github for this repo.
