@@ -1,6 +1,7 @@
-package main
+package handler
 
 import (
+	"../service/user_service"
 	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
@@ -16,12 +17,12 @@ import (
 // Authnetication has not been implemented yet.
 // We're just passing user ids as a route param, and verifying that it's valid
 // In a real application, we should let users bass basic auth tokens and verify
-func authenticateRequest(r *http.Request, p httprouter.Params) (*User, error) {
+func authenticateRequest(r *http.Request, p httprouter.Params) (*user_service.User, error) {
 	uid := strings.ToLower(p.ByName("userid"))
 	if uid == "" {
 		return nil, fmt.Errorf("Invalid userid provided")
 	}
-	return GetUser(uid)
+	return user_service.GetUser(uid)
 }
 
 // The standard API response struct for any data

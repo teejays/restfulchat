@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"encoding/json"
@@ -11,13 +11,11 @@ type Config struct {
 	GoFiledbRoot   string
 }
 
-var configFile string = "settings.json"
-
 var config Config
 
-func init() {
+func InitConfig(configFilePath string) {
 
-	file, err := os.Open(configFile)
+	file, err := os.Open(configFilePath)
 	if err != nil {
 		log.Fatal(err)
 	}
