@@ -1,4 +1,4 @@
-# RestfulChat
+# RestfulChat API
 
 A RESTful chat API based on Go's net/http package, httprouter, and my GoFileDb package.
 
