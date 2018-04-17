@@ -25,13 +25,13 @@ func authenticateRequest(r *http.Request, p httprouter.Params) (*user_service.Us
 	return user_service.GetUser(uid)
 }
 
-// The standard API response struct for any data
+// The standard API response struct for any data that our server might return
 type ResponseStruct struct {
 	IsError bool
 	Data    interface{}
 }
 
-// Helps a HTTP handler return any data encoded as json
+// Helps a HTTP handler return any data encoded as a json
 func writeData(w http.ResponseWriter, data interface{}) {
 	resp := ResponseStruct{Data: data}
 	b, err := json.Marshal(resp)
@@ -43,7 +43,7 @@ func writeData(w http.ResponseWriter, data interface{}) {
 }
 
 // Helps a HTTP handler return a 400 (Bad Request)
-// To do: We should probably have the status code passed as a parameter
+// To do: We should probably have the status code passed as a parameter, so we can handle more StatusCodes
 func writeError(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusBadRequest)
 	resp := ResponseStruct{Data: fmt.Sprintf("%s", err.Error()), IsError: true}
