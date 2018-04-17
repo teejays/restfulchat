@@ -3,7 +3,7 @@
 A RESTful chat API based on Go's net/http package, httprouter, and my GoFileDb package.
 
 ## Getting Started
-Setting this API up should be fairly easy to set up if you have Go set up. 
+Setting this API up should be fairly easy if you have Go set up. 
 ### Prerequisites:
 1) Install GoLang from the official [Go website](https://golang.org/).
 2) Install the following Go packages:
