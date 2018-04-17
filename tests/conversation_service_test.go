@@ -12,9 +12,12 @@ import (
 
 var MockConversations map[string]conversation_service.Conversation = map[string]conversation_service.Conversation{
 	"ok_1": conversation_service.Conversation{
-		UserIds:       []string{"someuser1", "someuser2"},
-		Messages:      []message_service.Message{MockMessages["ok_1"], MockMessages["ok_2"]},
-		LastMessageId: 3,
+		UserIds: []string{"someuser1", "someuser2"},
+		Messages: []message_service.Message{
+			MockMessages["ok_1"],
+			MockMessages["ok_2"],
+		},
+		LastMessageId: MockMessages["ok_2"].Id,
 	},
 }
 
@@ -44,13 +47,10 @@ func TestAddMessage(t *testing.T) {
 		t.Errorf("Invalid message id was returned, expected %d, got %d", 3, mId)
 	}
 
-	// 2. Adding an empty message should also work
+	// 2. Adding an empty message should not work
 	mId, err = conv.AddMessage(MockMessages["empty_1"])
-	if err != nil {
-		t.Error(err)
-	}
-	if mId != 4 {
-		t.Errorf("Invalid message id was returned, expected %d, got %d", 4, mId)
+	if err == nil {
+		t.Error("expected the validation to fail on an empty message, but it did not")
 	}
 }
 
@@ -58,19 +58,18 @@ func TestEditMessage(t *testing.T) {
 	// 1. Should be able to edit a message
 	_conv := MockConversations["ok_1"]
 	conv := &_conv
-	err := conv.EditMessage(MockConversations["ok_1"].Messages[0].Id, "edited message", MockConversations["ok_1"].Messages[0].From)
+	err := conv.EditMessage(MockConversations["ok_1"].Messages[1].Id, "edited message", MockConversations["ok_1"].Messages[1].From)
 	if err != nil {
 		t.Error(err)
 	}
-	if conv.Messages[0].Content != "edited message" {
+	if conv.Messages[1].Content != "edited message" {
 		t.Errorf("Editing message failed")
 	}
 	conv, err = conversation_service.GetConversationByUserIds(MockConversations["ok_1"].UserIds)
 	if err != nil {
-
 		t.Error(err)
 	}
-	if conv.Messages[0].Content != "edited message" {
+	if conv.Messages[1].Content != "edited message" {
 		t.Errorf("Editing message failed")
 	}
 }
@@ -83,15 +82,15 @@ func TestDeleteMessage(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if len(MockConversations["ok_1"].Messages) == 4 {
+	if len(MockConversations["ok_1"].Messages) == 1 {
 		t.Errorf("Editing message failed, the length didn't change")
 	}
 	conv, err = conversation_service.GetConversationByUserIds(MockConversations["ok_1"].UserIds)
 	if err != nil {
 		t.Error(err)
 	}
-	if len(conv.Messages) == 4 {
-		t.Errorf("Editing message failed, the length didn't change")
+	if len(conv.Messages) != 1 {
+		t.Errorf("Editing message failed because unexpected length of messages in the conversation")
 	}
 }
 
@@ -107,11 +106,11 @@ func TestSave(t *testing.T) {
 
 func TestGetConversationByUserIds(t *testing.T) {
 	// 1. We just added two new messages, we should be able to see them
-	conv, err := conversation_service.GetConversationByUserIds([]string{"someuser1", "someuser2"})
+	conv, err := conversation_service.GetConversationByUserIds(MockConversations["ok_1"].UserIds)
 	if err != nil {
 		t.Error(err)
 	}
-	if len(conv.Messages) != 4 {
-		t.Errorf("Invalid length of messages, expected %d, got %d", 4, len(conv.Messages))
+	if len(conv.Messages) != 2 {
+		t.Errorf("Invalid length of messages, expected %d, got %d", 2, len(conv.Messages))
 	}
 }

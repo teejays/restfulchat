@@ -13,7 +13,7 @@ import (
 
 // During testing, this sets up the application with some basic settings
 func init() {
-	config.InitConfig("../config/settings_test.json")
+	config.InitConfig("settings_test.json")
 	// Test DB: For testing, we use a different DB location since we do not want to interfare with the actual database
 	gofiledb.InitClient(config.GetConfig().GoFiledbRoot)
 

@@ -26,14 +26,14 @@ func authenticateRequest(r *http.Request, p httprouter.Params) (*user_service.Us
 }
 
 // The standard API response struct for any data
-type responseStruct struct {
+type ResponseStruct struct {
 	IsError bool
 	Data    interface{}
 }
 
 // Helps a HTTP handler return any data encoded as json
 func writeData(w http.ResponseWriter, data interface{}) {
-	resp := responseStruct{Data: data}
+	resp := ResponseStruct{Data: data}
 	b, err := json.Marshal(resp)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -46,7 +46,7 @@ func writeData(w http.ResponseWriter, data interface{}) {
 // To do: We should probably have the status code passed as a parameter
 func writeError(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusBadRequest)
-	resp := responseStruct{Data: fmt.Sprintf("%s", err.Error()), IsError: true}
+	resp := ResponseStruct{Data: fmt.Sprintf("%s", err.Error()), IsError: true}
 	b, err := json.Marshal(resp)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
