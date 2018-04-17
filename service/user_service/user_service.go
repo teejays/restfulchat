@@ -17,6 +17,11 @@ User is the main 'Subject' of any activity in this chat API.
 This implementation is *very* basic.
 For simplicity, we only define one field for a User object, the UserId.
 Field UserId of a user is defined a string so we can potentially treat it as unique usernames
+
+User: Represents a user.
+-- Structure:
+-- -- UserId (string)
+-- Buddy: a user that another user is interacts with.
 */
 
 // Define what a user object would look like
