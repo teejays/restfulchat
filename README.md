@@ -28,7 +28,7 @@ Setting this API up should be fairly easy to set up if you have Go set up.
 
 ### Testing:
 
-The unit tests for this package are located in _./tests_ folder. To run the tests, use the following command from the project root directory:
+You can use Go's internal testing framework to test this project. The unit tests for this package are located in _./tests_ folder. To run the tests, use the following command from the project root directory:
 
 ```go tests -v ./tests```
 
@@ -82,11 +82,20 @@ The applications is based on three objects:
 ### Authentication
 The authentication layer for this server hasn't been implemented yet. However, the API is built in a way that that Basic Auth could be incorporated easily without changing the structure of the code.
 
-### Database
-I am using my own [_GoFiledb_](https://github.com/teejays/gofiledb) package for as a database. GoFiledb is a simple, minimalistic Go client that lets applications use the filesystem as a database. The main advantage of GoFiledb is that it uses the years of optimization efforts that went into file systems to make reading and serving of data is very fast. It is very quick to set up (vs. a proper database, which are sometimes an overkill for a simple project). 
+### Tech Stack
+
+##### WebFramework (None)
+I did not use any web framework for the project. The project folder structure and the relationships between different Go packages is something I decided on looking at the how complicated the code was. The simple nature of the project didn't make it necessary to go for a proper framework.
+
+##### GoLang
+I decided to write this in Go for one main reason: I love Go. I picked up GoLang while at work about a year ago. Since then, I have fallen in love the opinionatedness of the language, the strictly typed nature. There is a Go way of doing things, and that's something I've started to admire a lot. I don't consider my a Go expert yet, but I really want to be.
+
+##### Database
+I am using my own [_GoFiledb_](https://github.com/teejays/gofiledb) package for as a database. GoFiledb is a simple, minimalistic Go client that lets applications use the filesystem as a database. The client is still in development phase, and this is the second project that has used it. The main advantage of GoFiledb is that it uses the years of optimization efforts that went into file systems to make reading and serving of data is very fast. It is very quick to set up (vs. a proper database, which are sometimes an overkill for a simple project). 
 
 _Scalability:_
 This is a minimalistic API, developed mostly for fun and experimentation reasons. In order to scale it further, a few decisions probably need to be changed. For example, the local file syetem based data storage should probably be replaced by a proper schemaless DB system.
+
 
 ### Contact Info
 For any issues or feedback, please create an issue in Github for this repo.
